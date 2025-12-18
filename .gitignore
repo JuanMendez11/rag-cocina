@@ -1,4 +1,6 @@
-# Archivos ocultos
+__pycache__/
+
+# Entornos virtuales
 .venv
 .env
 
