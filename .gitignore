@@ -1,0 +1,6 @@
+# Archivos ocultos
+.venv
+.env
+
+# Base de datos vectorizada
+chroma_db_cohere/

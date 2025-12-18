@@ -1,0 +1,10 @@
+ipykernel
+pypdf
+
+langchain-community
+langchain-core
+langchain-text-splitters
+langchain-chroma
+langchain-cohere
+
+fastapi[standard]
