@@ -81,7 +81,7 @@ def responder_charla_casual(pregunta: str) -> str:
     return chain.invoke({"input": pregunta})
 
 
-def buscar_contexto(pregunta: str, k: int = 3):
+def buscar_contexto(pregunta: str, k: int = 5):
     """
     Realiza el embedding de la consulta y busca los 'k' fragmentos 
     más similares en la base de datos vectorial.
