@@ -8,3 +8,6 @@ langchain-chroma
 langchain-cohere
 
 fastapi[standard]
+
+streamlit
+requests
