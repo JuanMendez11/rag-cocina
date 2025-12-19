@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import services
 import uvicorn
+
+from schemas import ConsultaRequest, ConsultaResponse
+import services
 
 # --- 1. CONFIGURACIÓN DE LA APP ---
 app = FastAPI(
@@ -10,16 +11,7 @@ app = FastAPI(
     version="1.0"
 )
 
-# --- 2. MODELOS DE DATOS (SCHEMAS) ---
-
-class ConsultaRequest(BaseModel):
-    pregunta: str
-
-class ConsultaResponse(BaseModel):
-    respuesta: str
-    intencion_detectada: str
-
-# --- 3. ENDPOINTS ---
+# --- 2. ENDPOINTS ---
 
 @app.get("/")
 def home():
