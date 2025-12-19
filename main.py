@@ -17,7 +17,7 @@ class ConsultaRequest(BaseModel):
 
 class ConsultaResponse(BaseModel):
     respuesta: str
-    intencion_detectada: str       # Ej: "Libro de Recetas", "Chat Casual", "Bloqueo"
+    intencion_detectada: str
 
 # --- 3. ENDPOINTS ---
 
@@ -37,13 +37,12 @@ async def chat_endpoint(consulta: ConsultaRequest):
         print(f"--> Pregunta recibida: {consulta.pregunta}")
         
         # Llamamos al Orquestador en services.py
-        # Este nos devuelve un dict: {"respuesta": ..., "fuente": ..., "validado": ...}
         resultado = services.orquestador_conversacional(consulta.pregunta)
         
         # Construimos la respuesta validadapara el frontend
         return ConsultaResponse(
             respuesta=resultado["respuesta"],
-            intencion_detectada=resultado["fuente"]
+            intencion_detectada=resultado["intencion"]
         )
 
     except Exception as e:

@@ -93,7 +93,7 @@ def buscar_contexto(pregunta: str, k: int = 3):
 
 def generar_respuesta_rag(pregunta: str) -> str:
     """
-    Usa el modelo potente (Command R+) para responder basándose 
+    Usa el modelo potente (Command R) para responder basándose 
     en la información recuperada de la base de datos.
     """
     
@@ -111,6 +111,8 @@ def generar_respuesta_rag(pregunta: str) -> str:
     - Si la respuesta no está en el contexto, di amablemente que no tienes esa información.
     - Cita el nombre de la receta si aplica.
     - Sé claro y didáctico.
+    - No se deben usar emojis en las respuestas.
+    - Las respuestas deben ser siempre en español, independientemente del idioma de la pregunta.
 
     CONTEXTO:
     {context}
@@ -146,15 +148,15 @@ def orquestador_conversacional(pregunta: str) -> dict:
     # 2. Ejecutar acción según la decisión
     if intencion == "SALUDO":
         respuesta = responder_charla_casual(pregunta)
-        return {"respuesta": respuesta, "fuente": "Chat Casual 💬"}
+        return {"respuesta": respuesta, "intencion": "Saludo 💬"}
     
     elif intencion == "BUSQUEDA":
         # Llamamos a tu función RAG existente (la que ya tenías)
         respuesta = generar_respuesta_rag(pregunta)
-        return {"respuesta": respuesta, "fuente": "Libro de Recetas 📖"}
+        return {"respuesta": respuesta, "intencion": "Consulta gastronomica 📖"}
     
     else: # OFF_TOPIC
         return {
             "respuesta": "Lo siento, mi delantal es solo para cocinar. Preguntame sobre empanadas, locro o postres argentinos.", 
-            "fuente": "Bloqueo de Tema 🚫"
+            "intencion": "Fuera de tema 🚫"
         }

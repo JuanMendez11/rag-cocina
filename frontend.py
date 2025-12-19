@@ -93,13 +93,13 @@ if prompt := (st.chat_input("Preguntame sobre una receta...") or prompt_inicial)
                     
                     # Mostrar respuesta
                     message_placeholder.markdown(texto_respuesta)
-                    st.caption(f"ℹ️ Fuente: {intencion}")
+                    st.caption(f"Intencion: {intencion}")
                     
                     # Guardar en historial
                     st.session_state.messages.append({
                         "role": "assistant", 
                         "content": texto_respuesta,
-                        "fuente": intencion
+                        "intencion": intencion
                     })
                     
                 else:
