@@ -31,8 +31,8 @@ vectorstore = Chroma(
 )
 
 # C. Definir los LLMs (Cerebro Rápido vs Cerebro Potente)
-llm_rapido = ChatCohere(model="command-r-08-2024", temperature=0)
-llm_potente = ChatCohere(model="command-r-plus-08-2024", temperature=0.3)
+llm_rapido = ChatCohere(model="command-r-08-2024", temperature=0, max_tokens=5)
+llm_potente = ChatCohere(model="command-r-08-2024", temperature=0.3)
 
 
 # --- FUNCIONES DE SERVICIO ---
