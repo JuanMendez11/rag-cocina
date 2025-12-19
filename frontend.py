@@ -8,9 +8,23 @@ st.set_page_config(
     layout="centered"
 )
 
-# Definir la URL de tu API (Backend)
-# Asumimos que corre en local. Si usas Docker o nube, cambia esto.
 API_URL = "http://127.0.0.1:8000/chat"
+
+# --- 🚀 NUEVO: FUNCIÓN PARA MOSTRAR VALIDACIÓN ---
+def mostrar_estado_validacion(intencion, es_verificado):
+    """
+    Muestra visualmente si la respuesta fue validada contra el libro o no.
+    """
+    # Solo mostramos el semáforo si es una consulta al libro (no en saludos)
+    if "Consulta" in intencion or "Recetas" in intencion or "Libro" in intencion:
+        if es_verificado:
+            st.success("✅ Verificado: Información fiel al libro.", icon="🛡️")
+        else:
+            st.warning("⚠️ Advertencia: Posible alucinación. No encontrado en el texto.", icon="🚩")
+    
+    # Mostramos la fuente siempre
+    st.caption(f"ℹ️ Fuente: {intencion}")
+
 
 # --- 2. BARRA LATERAL (SIDEBAR) ---
 with st.sidebar:
@@ -29,30 +43,26 @@ with st.sidebar:
         "Postres de la zona de Cuyo"
     ]
     
-    # Botones para preguntas rápidas
     for ej in ejemplos:
         if st.button(ej):
-            # Hack para que el botón envíe el texto al chat
             st.session_state.input_rapido = ej
 
     st.divider()
-    # Botón para limpiar historial
     if st.button("🗑️ Borrar conversación"):
         st.session_state.messages = []
         st.rerun()
 
-# --- 3. ESTADO DE LA SESIÓN (HISTORIAL) ---
+# --- 3. ESTADO DE LA SESIÓN ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Manejo del input desde los botones de sugerencia
 if "input_rapido" in st.session_state:
     prompt_inicial = st.session_state.input_rapido
-    del st.session_state.input_rapido # Limpiar para la próxima
+    del st.session_state.input_rapido 
 else:
     prompt_inicial = None
 
-# --- 4. TÍTULO PRINCIPAL ---
+# --- 4. TÍTULO ---
 st.title("👨‍🍳 ChefBot Argentina")
 st.caption("Tu asistente experto en sabores regionales y recetas autóctonas.")
 
@@ -61,56 +71,61 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         
-        # Si el mensaje tiene info extra (fuente), la mostramos discreta
-        if "fuente" in message and message["fuente"]:
-            st.caption(f"ℹ️ Fuente: {message['fuente']}")
+        # 🚀 NUEVO: Si es el asistente, mostramos su estado de validación guardado
+        if message["role"] == "assistant":
+            # Usamos .get() por seguridad (por si hay mensajes viejos sin este campo)
+            mostrar_estado_validacion(
+                message.get("intencion", ""), 
+                message.get("verificado", True)
+            )
 
-# --- 6. CAJA DE TEXTO Y LÓGICA PRINCIPAL ---
-# Aceptamos input del usuario o de los botones de sugerencia
+# --- 6. LÓGICA PRINCIPAL ---
 if prompt := (st.chat_input("Preguntame sobre una receta...") or prompt_inicial):
     
-    # A. Mostrar mensaje del usuario
+    # A. Mostrar mensaje usuario
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # B. Llamada a la API (Backend)
+    # B. Llamada a la API
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         
         try:
             with st.spinner("Buscando en el libro de recetas..."):
-                # Petición POST a tu FastAPI
                 payload = {"pregunta": prompt}
                 response = requests.post(API_URL, json=payload)
                 
                 if response.status_code == 200:
                     data = response.json()
                     
-                    # Extraer datos según tu esquema Pydantic
+                    # Extraer datos
                     texto_respuesta = data["respuesta"]
                     intencion = data["intencion_detectada"]
+                    # 🚀 NUEVO: Capturamos el booleano de validación
+                    es_verificado = data["es_respuesta_verificada"]
                     
-                    # Mostrar respuesta
+                    # 1. Mostrar respuesta de texto
                     message_placeholder.markdown(texto_respuesta)
-                    st.caption(f"Intencion: {intencion}")
                     
-                    # Guardar en historial
+                    # 2. 🚀 NUEVO: Mostrar el semáforo de validación
+                    mostrar_estado_validacion(intencion, es_verificado)
+                    
+                    # 3. Guardar en historial (incluyendo el estado de verificación)
                     st.session_state.messages.append({
                         "role": "assistant", 
                         "content": texto_respuesta,
-                        "intencion": intencion
+                        "intencion": intencion,
+                        "verificado": es_verificado # <-- Guardamos esto
                     })
                     
                 else:
-                    error_msg = f"Error {response.status_code}: No pude conectar con la cocina."
-                    message_placeholder.error(error_msg)
+                    message_placeholder.error(f"Error {response.status_code}: No pude conectar con la cocina.")
                     
         except requests.exceptions.ConnectionError:
             message_placeholder.error("🚨 Error de conexión: Asegúrate de que el backend (FastAPI) esté corriendo en el puerto 8000.")
         except Exception as e:
             message_placeholder.error(f"Ocurrió un error inesperado: {str(e)}")
             
-    # Si vino de un botón, forzamos la recarga para limpiar el estado
     if prompt_inicial:
         st.rerun()

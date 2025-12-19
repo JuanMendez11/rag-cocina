@@ -34,7 +34,8 @@ async def chat_endpoint(consulta: ConsultaRequest):
         # Construimos la respuesta validadapara el frontend
         return ConsultaResponse(
             respuesta=resultado["respuesta"],
-            intencion_detectada=resultado["intencion"]
+            intencion_detectada=resultado["intencion"],
+            es_respuesta_verificada=resultado["validado"]
         )
 
     except Exception as e:

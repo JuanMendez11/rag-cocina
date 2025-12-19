@@ -6,3 +6,4 @@ class ConsultaRequest(BaseModel):
 class ConsultaResponse(BaseModel):
     respuesta: str
     intencion_detectada: str
+    es_respuesta_verificada: bool

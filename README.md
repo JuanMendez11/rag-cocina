@@ -53,6 +53,41 @@ El sistema no es un simple chat lineal; utiliza un **Orquestador Semántico** pa
     * **Auditoría (Groundedness):** Un LLM juez verifica si la respuesta es fiel al libro antes de entregarla.
 4.  **Frontend:** Muestra la respuesta y los metadatos de validación.
 
+### Documentacion de la API:
+La solución expone una API RESTful construida con **FastAPI**. A continuación se detallan los endpoints disponibles:
+
+#### 1. Health Check & Bienvenida
+Verifica que el servidor esté operativo.
+
+- **Método:** `GET`
+- **Endpoint:** `/`
+- **Respuesta:**
+  ```json
+  {
+    "status": "online",
+    "mensaje": "Bienvenido a la API de Gastronomía. Usa /docs para probar."
+  }
+
+#### 2. Chat inteligente
+Es el punto de entrada principal. Este endpoint recibe la pregunta del usuario y la pasa por el Orquestador Semántico para decidir si responder con una charla casual o activar el motor de búsqueda (RAG) con validación de fidelidad.
+
+- **Método:** `POST`
+- **Endpoint:** `/chat`
+
+- **Petición:**
+```json
+{
+  "pregunta": "string"
+}
+```  
+- **Respuesta:**
+```json
+{
+  "respuesta": "string",
+  "intencion_detectada": "string",
+  "es_respuesta_verificada": "bool"
+}
+```
 
 ### Resumen stack tecnológico
 

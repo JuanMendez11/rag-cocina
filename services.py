@@ -91,6 +91,46 @@ def buscar_contexto(pregunta: str, k: int = 5):
     return docs
 
 
+def validar_fidelidad(pregunta: str, respuesta: str, contexto: str) -> bool:
+    """
+    Función Juez: Verifica si la respuesta generada está realmente
+    respaldada por el contexto recuperado del PDF.
+    Retorna: True (Aprobado) / False (Alucinación)
+    """
+    
+    prompt_juez = ChatPromptTemplate.from_template(
+        """Eres un auditor de calidad estricto. Tu trabajo es detectar alucinaciones en un sistema RAG.
+        
+        1. Analiza el CONTEXTO y la RESPUESTA.
+        2. Si la respuesta contiene información que NO está en el contexto, es una alucinación (responde NO).
+        3. Si la respuesta contradice el contexto, responde NO.
+        4. Si la respuesta se basa fielmente en el contexto, responde SI.
+
+        CONTEXTO:
+        {contexto}
+
+        PREGUNTA USUARIO: {pregunta}
+        RESPUESTA BOT: {respuesta}
+
+        VEREDICTO (Solo responde SI o NO):"""
+    )
+
+    # Usamos llm_rapido porque es bueno clasificando y muy veloz
+    chain = prompt_juez | llm_rapido | StrOutputParser()
+    
+    # Ejecutamos la auditoría
+    veredicto = chain.invoke({
+        "contexto": contexto,
+        "pregunta": pregunta,
+        "respuesta": respuesta
+    })
+
+    veredicto_limpio = veredicto.strip().upper()
+    print(f"⚖️  Juez de Fidelidad dice: {veredicto_limpio}")
+    
+    return "SI" in veredicto_limpio
+
+
 def generar_respuesta_rag(pregunta: str) -> str:
     """
     Usa el modelo potente (Command R) para responder basándose 
@@ -103,8 +143,11 @@ def generar_respuesta_rag(pregunta: str) -> str:
     
     # 2. Si no hay contexto relevante (opcional, pero buena práctica)
     if not contexto_texto:
-        return "No encontré información suficiente en el libro para responder eso."
-
+        return {
+            "respuesta": "No encontré información en el libro sobre eso.",
+            "validado": False
+        }
+    
     # 3. Crear el Prompt
     template = """Eres un experto Chef Argentino. Responde la pregunta del usuario basándote EXCLUSIVAMENTE en el siguiente contexto extraído del libro 'Gastronomía Regional Argentina'.
     
@@ -128,12 +171,26 @@ def generar_respuesta_rag(pregunta: str) -> str:
     chain = prompt | llm_potente | StrOutputParser()
 
     # 5. Ejecutar
-    respuesta = chain.invoke({
+    respuesta_candidata = chain.invoke({
         "context": contexto_texto,
         "question": pregunta
     })
     
-    return respuesta
+    es_fiel = validar_fidelidad(pregunta, respuesta_candidata, contexto_texto)
+
+    if es_fiel:
+        return {
+            "respuesta": respuesta_candidata,
+            "validado": True
+        }
+    
+    else:
+        # Si el juez dice que es mentira, agregamos una advertencia visible
+        advertencia = "\n\n⚠️ **Nota del Sistema:** Esta respuesta podría contener información externa no verificada en el libro original."
+        return {
+            "respuesta": respuesta_candidata + advertencia,
+            "validado": False
+        }
 
 
 def orquestador_conversacional(pregunta: str) -> dict:
@@ -148,15 +205,23 @@ def orquestador_conversacional(pregunta: str) -> dict:
     # 2. Ejecutar acción según la decisión
     if intencion == "SALUDO":
         respuesta = responder_charla_casual(pregunta)
-        return {"respuesta": respuesta, "intencion": "Saludo 💬"}
+        return {
+            "respuesta": respuesta, 
+            "intencion": "Saludo 💬",
+            "validado": True
+        }
     
     elif intencion == "BUSQUEDA":
         # Llamamos a tu función RAG existente (la que ya tenías)
-        respuesta = generar_respuesta_rag(pregunta)
-        return {"respuesta": respuesta, "intencion": "Consulta gastronomica 📖"}
+        resultado_rag = generar_respuesta_rag(pregunta)
+        return {"respuesta": resultado_rag["respuesta"], 
+                "intencion": "Consulta gastronomica 📖",
+                "validado": resultado_rag["validado"]
+        }
     
     else: # OFF_TOPIC
         return {
             "respuesta": "Lo siento, mi delantal es solo para cocinar. Preguntame sobre empanadas, locro o postres argentinos.", 
-            "intencion": "Fuera de tema 🚫"
+            "intencion": "Fuera de tema 🚫",
+            "validado": True
         }
